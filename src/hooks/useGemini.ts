@@ -15,7 +15,7 @@ function getAiClient() {
 }
 
 // Helper for exponential backoff
-async function retryWithBackoff<T>(fn: () => Promise<T>, retries = 5, delay = 2000): Promise<T> {
+async function retryWithBackoff<T>(fn: () => Promise<T>, retries = 10, delay = 5000): Promise<T> {
   try {
     return await fn();
   } catch (error: any) {
@@ -127,7 +127,6 @@ export function useGemini() {
         model: "gemini-3-flash-preview",
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
         config: {
-          tools: [{ googleSearch: {} }],
           responseMimeType: "application/json",
           responseSchema: responseSchema
         }
