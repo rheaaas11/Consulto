@@ -1,7 +1,18 @@
 import { useState } from "react";
 import { GoogleGenAI } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
+let aiClient: GoogleGenAI | null = null;
+
+function getAiClient() {
+  if (!aiClient) {
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      throw new Error("GEMINI_API_KEY is not set");
+    }
+    aiClient = new GoogleGenAI({ apiKey });
+  }
+  return aiClient;
+}
 
 export function useGemini() {
   const [loading, setLoading] = useState(false);
@@ -9,6 +20,7 @@ export function useGemini() {
   const streamResponse = async (systemInstruction: string, history: any[], onChunk: (chunk: string) => void, imageData?: { data: string, mimeType: string }) => {
     setLoading(true);
     try {
+      const ai = getAiClient();
       const lastMessage = history[history.length - 1].content;
       const previousMessages = history.slice(0, -1).map(m => ({
         role: m.role === 'assistant' ? 'model' : 'user',
@@ -55,6 +67,7 @@ export function useGemini() {
 
   const generateSummary = async (prompt: string) => {
     try {
+      const ai = getAiClient();
       const responseSchema = {
         type: "OBJECT",
         properties: {
