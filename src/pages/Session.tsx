@@ -106,9 +106,14 @@ export default function Session() {
     setMessages(newMessages);
     setInputText('');
 
-    await updateDoc(doc(db, 'sessions', sessionId!), {
-      messages: arrayUnion(userMessage)
-    });
+    try {
+      await updateDoc(doc(db, 'sessions', sessionId!), {
+        messages: arrayUnion(userMessage)
+      });
+    } catch (error) {
+      console.error("Error updating Firestore messages:", error);
+      console.error("Message object:", userMessage);
+    }
 
     // Generate AI Response
     const overlayKey = Object.keys(TOPIC_OVERLAYS).find(k => session.topicId.startsWith(k)) as keyof typeof TOPIC_OVERLAYS;

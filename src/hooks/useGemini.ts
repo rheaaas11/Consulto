@@ -15,15 +15,18 @@ function getAiClient() {
 }
 
 // Helper for exponential backoff
-async function retryWithBackoff<T>(fn: () => Promise<T>, retries = 3, delay = 1000): Promise<T> {
+async function retryWithBackoff<T>(fn: () => Promise<T>, retries = 5, delay = 2000): Promise<T> {
   try {
     return await fn();
   } catch (error: any) {
     // Check if error is a 429 (Resource Exhausted)
     const isRateLimit = error.message && error.message.includes("429");
     if (isRateLimit && retries > 0) {
-      console.warn(`Rate limited, retrying in ${delay}ms... (${retries} retries left)`);
-      await new Promise(resolve => setTimeout(resolve, delay));
+      // Add jitter: delay * (0.5 to 1.5)
+      const jitter = 0.5 + Math.random();
+      const backoffDelay = Math.floor(delay * jitter);
+      console.warn(`Rate limited, retrying in ${backoffDelay}ms... (${retries} retries left)`);
+      await new Promise(resolve => setTimeout(resolve, backoffDelay));
       return retryWithBackoff(fn, retries - 1, delay * 2);
     }
     throw error;

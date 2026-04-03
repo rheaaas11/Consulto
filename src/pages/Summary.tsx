@@ -52,7 +52,8 @@ export default function Summary() {
             try {
               await updateDoc(docRef, { summary: generatedSummary });
             } catch (error) {
-              console.warn("Could not save summary (maybe not logged in or no permission)", error);
+              console.error("Error saving summary to Firestore:", error);
+              console.error("Summary object:", generatedSummary);
             }
           }
           setLoading(false);
