@@ -1,0 +1,82 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Student or teacher profile",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Full name" },
+        "email": { "type": "string", "format": "email", "description": "School email" },
+        "role": { "type": "string", "enum": ["student", "teacher", "admin"], "description": "User role" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Account creation timestamp" },
+        "streak": { "type": "number", "description": "Consecutive days with a session" }
+      },
+      "required": ["email", "role", "createdAt"]
+    },
+    "Session": {
+      "title": "Session",
+      "description": "A tutoring session",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Reference to the student's UID" },
+        "subject": { "type": "string", "description": "Subject name" },
+        "subjectId": { "type": "string", "description": "Subject ID" },
+        "topicId": { "type": "string", "description": "Topic ID" },
+        "topicLabel": { "type": "string", "description": "Topic name" },
+        "subtopicLabel": { "type": "string", "description": "Subtopic name" },
+        "sessionType": { "type": "string", "enum": ["theory", "question"], "description": "Type of tutoring session" },
+        "startedAt": { "type": "string", "format": "date-time", "description": "Session start timestamp" },
+        "endedAt": { "type": "string", "format": "date-time", "description": "Session end timestamp" },
+        "durationSeconds": { "type": "number", "description": "Total duration in seconds" },
+        "status": { "type": "string", "enum": ["active", "completed"], "description": "Session status" },
+        "messages": { "type": "array", "items": { "$ref": "#/entities/Message" }, "description": "Full conversation array" },
+        "summary": { "$ref": "#/entities/SessionSummary", "description": "AI-generated summary" }
+      },
+      "required": ["userId", "subject", "topicId", "status"]
+    },
+    "Message": {
+      "title": "Message",
+      "description": "A single message in a session",
+      "type": "object",
+      "properties": {
+        "role": { "type": "string", "enum": ["user", "assistant"], "description": "Sender role" },
+        "content": { "type": "string", "description": "Message text" },
+        "timestamp": { "type": "string", "format": "date-time", "description": "Message timestamp" },
+        "inputMethod": { "type": "string", "enum": ["text", "voice"], "description": "Input method" }
+      },
+      "required": ["role", "content", "timestamp"]
+    },
+    "SessionSummary": {
+      "title": "SessionSummary",
+      "description": "AI-generated analysis of a session",
+      "type": "object",
+      "properties": {
+        "strengths": { "type": "array", "items": { "type": "string" }, "description": "Concepts understood" },
+        "areasToRevisit": { "type": "array", "items": { "type": "string" }, "description": "Gaps identified" },
+        "misconceptions": { "type": "array", "items": { "type": "string" }, "description": "Incorrect beliefs caught" },
+        "overallReadiness": { "type": "number", "description": "Readiness level (0-100)" },
+        "practiceQuestions": { "type": "array", "items": { "$ref": "#/entities/PracticeQuestion" }, "description": "Recommended questions" }
+      }
+    },
+    "PracticeQuestion": {
+      "title": "PracticeQuestion",
+      "description": "A past-paper style question",
+      "type": "object",
+      "properties": {
+        "question": { "type": "string", "description": "Question text" },
+        "hint": { "type": "string", "description": "Guiding hint" },
+        "source": { "type": "string", "description": "A-Level paper reference" }
+      }
+    }
+  },
+  "firestore": {
+    "/users/{uid}": {
+      "schema": "User",
+      "description": "User profiles"
+    },
+    "/sessions/{sessionId}": {
+      "schema": "Session",
+      "description": "Tutoring sessions"
+    }
+  }
+}

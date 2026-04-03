@@ -1,0 +1,79 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: #F9FAFB;
+  --color-surface: #FFFFFF;
+  --color-primary: #2563EB;
+  --color-accent: #3B82F6;
+  --color-danger: #EF4444;
+  --color-success: #10B981;
+  --color-text-main: #111827;
+  --color-text-muted: #6B7280;
+  --color-line: #F3F4F6;
+  
+  --font-heading: "Outfit", sans-serif;
+  --font-body: "Inter", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+  
+  --radius-bubble: 24px;
+  --radius-card: 32px;
+  --radius-button: 9999px;
+}
+
+@layer base {
+  body {
+    @apply bg-background text-text-main font-body antialiased;
+  }
+}
+
+@layer utilities {
+  .glass {
+    @apply bg-white/80 backdrop-blur-md border border-white/20 shadow-sm;
+  }
+  
+  .card-shadow {
+    @apply shadow-[0_8px_30px_rgb(0,0,0,0.04)];
+  }
+
+  .card-shadow-hover {
+    @apply shadow-[0_20px_50px_rgba(0,0,0,0.08)];
+  }
+
+  .text-small-caps {
+    @apply text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400;
+  }
+
+  .soft-gradient {
+    @apply bg-gradient-to-br from-white to-gray-50;
+  }
+
+  .blue-glow {
+    @apply shadow-[0_0_40px_rgba(37,99,235,0.1)];
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-200 rounded-full hover:bg-gray-300 transition-colors;
+}
+
+/* Katex Overrides */
+.katex-display {
+  @apply my-4 overflow-x-auto overflow-y-hidden py-2;
+}
+
+.prose {
+  @apply max-w-none;
+}
+
+.prose p {
+  @apply mb-4 last:mb-0;
+}

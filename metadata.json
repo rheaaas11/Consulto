@@ -1,0 +1,7 @@
+{
+  "name": "Consulto ",
+  "description": "An AI thinking coach for Singapore H2 A-Level students. Guides students through understanding via structured questions and misconception correction.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}

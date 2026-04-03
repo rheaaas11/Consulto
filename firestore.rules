@@ -1,0 +1,94 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: {uid}
+    // Fields:
+    //   - name: string (optional)
+    //   - email: string (required, email format)
+    //   - role: string (required, student/teacher/admin)
+    //   - createdAt: timestamp (required)
+    //   - streak: number (optional)
+    //
+    // Collection: sessions
+    // Document ID: {sessionId}
+    // Fields:
+    //   - userId: string (required, matches owner uid)
+    //   - subject: string (required)
+    //   - topicId: string (required)
+    //   - topicLabel: string (optional)
+    //   - subtopicLabel: string (optional)
+    //   - sessionType: string (required, theory/question)
+    //   - startedAt: timestamp (required)
+    //   - endedAt: timestamp (optional)
+    //   - durationSeconds: number (optional)
+    //   - status: string (required, active/completed)
+    //   - messages: list (optional)
+    //   - summary: map (optional)
+    //
+    // ===============================================================
+
+    // Helper Functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (
+          (request.auth.token.email == "4sharma13810@gmail.com" && request.auth.token.email_verified == true) ||
+          (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', 'student') == 'admin')
+        );
+    }
+
+    function isDocOwner() {
+      return isAuthenticated() && request.auth.uid == resource.data.userId;
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['email', 'role', 'createdAt']) &&
+             data.email is string && data.email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$") &&
+             data.role in ['student', 'teacher', 'admin'] &&
+             data.createdAt is timestamp &&
+             (!('name' in data) || (data.name is string && data.name.size() < 100)) &&
+             (!('streak' in data) || data.streak is number);
+    }
+
+    function isValidSession(data) {
+      return data.keys().hasAll(['userId', 'subject', 'topicId', 'status', 'startedAt', 'sessionType']) &&
+             data.userId == request.auth.uid &&
+             data.status in ['active', 'completed'] &&
+             data.sessionType in ['theory', 'question'] &&
+             data.startedAt is timestamp;
+    }
+
+    // Rules
+    match /users/{uid} {
+      allow read: if isOwner(uid) || isAdmin();
+      allow create: if isOwner(uid) && isValidUser(request.resource.data) && (request.resource.data.role == 'student' || isAdmin());
+      allow update: if isOwner(uid) && (
+        isAdmin() || 
+        (
+          isValidUser(request.resource.data) && 
+          request.resource.data.get('role', 'student') == resource.data.get('role', 'student')
+        )
+      );
+    }
+
+    match /sessions/{sessionId} {
+      allow read: if isDocOwner();
+      allow create: if isAuthenticated() && isValidSession(request.resource.data);
+      allow update: if isDocOwner() && isValidSession(request.resource.data);
+      allow delete: if isDocOwner();
+    }
+  }
+}
