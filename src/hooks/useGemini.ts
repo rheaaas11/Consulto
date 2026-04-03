@@ -14,6 +14,22 @@ function getAiClient() {
   return aiClient;
 }
 
+// Helper for exponential backoff
+async function retryWithBackoff<T>(fn: () => Promise<T>, retries = 3, delay = 1000): Promise<T> {
+  try {
+    return await fn();
+  } catch (error: any) {
+    // Check if error is a 429 (Resource Exhausted)
+    const isRateLimit = error.message && error.message.includes("429");
+    if (isRateLimit && retries > 0) {
+      console.warn(`Rate limited, retrying in ${delay}ms... (${retries} retries left)`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+      return retryWithBackoff(fn, retries - 1, delay * 2);
+    }
+    throw error;
+  }
+}
+
 export function useGemini() {
   const [loading, setLoading] = useState(false);
 
@@ -39,14 +55,14 @@ export function useGemini() {
 
       const contents = [...previousMessages, { role: 'user', parts }];
 
-      const response = await ai.models.generateContentStream({
+      const response = await retryWithBackoff(() => ai.models.generateContentStream({
         model: "gemini-3-flash-preview",
         contents: contents,
         config: {
           systemInstruction: systemInstruction,
           temperature: 0.7,
         }
-      });
+      }));
 
       let fullText = "";
       for await (const chunk of response) {
@@ -104,7 +120,7 @@ export function useGemini() {
         required: ["strengths", "areasToRevisit", "misconceptions", "overallReadiness", "practiceQuestions", "externalResources"]
       };
 
-      const response = await ai.models.generateContent({
+      const response = await retryWithBackoff(() => ai.models.generateContent({
         model: "gemini-3-flash-preview",
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
         config: {
@@ -112,10 +128,13 @@ export function useGemini() {
           responseMimeType: "application/json",
           responseSchema: responseSchema
         }
-      });
+      }));
 
       const text = response.text;
-      if (!text) return null;
+      if (!text) {
+        console.error("Gemini returned empty text for summary generation");
+        return null;
+      }
       
       // Clean up markdown if present
       const cleanText = text.replace(/^```json\n?/, '').replace(/\n?```$/, '').trim();
@@ -124,8 +143,14 @@ export function useGemini() {
         return JSON.parse(cleanText);
       } catch (parseError) {
         console.error("JSON Parse Error on text:", cleanText);
+        console.error("Original text:", text);
         const fixedText = cleanText.replace(/\\(?![bfnrtu"\\\/])/g, '\\\\');
-        return JSON.parse(fixedText);
+        try {
+          return JSON.parse(fixedText);
+        } catch (secondParseError) {
+          console.error("Second JSON Parse Error on text:", fixedText);
+          return null;
+        }
       }
     } catch (error) {
       console.error("Summary Generation Error:", error);

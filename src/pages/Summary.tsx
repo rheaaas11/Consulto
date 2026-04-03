@@ -49,7 +49,11 @@ export default function Summary() {
           const generatedSummary = await generateSummary(prompt);
           if (generatedSummary) {
             setSummary(generatedSummary);
-            await updateDoc(docRef, { summary: generatedSummary });
+            try {
+              await updateDoc(docRef, { summary: generatedSummary });
+            } catch (error) {
+              console.warn("Could not save summary (maybe not logged in or no permission)", error);
+            }
           }
           setLoading(false);
         }
@@ -59,7 +63,12 @@ export default function Summary() {
   }, [sessionId]);
 
   const handlePractice = async (question: any) => {
-    if (!user || !session) return;
+    if (!user) {
+      alert("Please log in to start a practice session.");
+      navigate('/login');
+      return;
+    }
+    if (!session) return;
     
     try {
       const sessionData = {
@@ -103,7 +112,14 @@ export default function Summary() {
     );
   }
 
-  if (!summary) return <div className="p-12 font-mono text-xs">Error generating summary</div>;
+  if (!summary) return (
+    <div className="min-h-screen flex flex-col items-center justify-center bg-background p-12 font-body text-center">
+      <AlertCircle className="w-16 h-16 text-red-500 mb-6" />
+      <h2 className="text-3xl font-bold text-gray-900 mb-4">Error generating summary</h2>
+      <p className="text-gray-500 mb-8 max-w-md">We encountered an issue while generating your session summary. Please try again.</p>
+      <Button onClick={() => window.location.reload()}>Retry Generation</Button>
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-background flex flex-col font-body">
